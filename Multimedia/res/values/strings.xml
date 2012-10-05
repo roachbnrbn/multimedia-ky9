@@ -1,0 +1,11 @@
+<resources>
+
+    <string name="app_name">Multimedia</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="menu_settings">Settings</string>
+    <string name="title_activity_main">Multimedia</string>
+    <string name="_sdcard_multi_d_jpg">/sdcard/Multi/%d.jpg</string>
+    <string name="version_1_0">Version 1.0</string>
+    <string name="btl_multimedia">BTL: Multimedia</string>
+
+</resources>
