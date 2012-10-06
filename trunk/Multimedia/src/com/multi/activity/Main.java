@@ -5,8 +5,12 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
-import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
+import org.opencv.android.OpenCVLoader;
+import org.opencv.android.Utils;
+import org.opencv.core.Mat;
+import org.opencv.highgui.Highgui;
+import org.opencv.imgproc.Imgproc;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -27,15 +31,19 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.lib.opencv.custom.BaseLoaderCallbackCustom;
+
 public class Main extends Activity {
 	private static final String TAG = "Main";
 	boolean autoRefresh=false;
-	//Camera camera;
+	boolean processLikeYou=true;
+	
 	static ScreenCamera preview;
 	Button buttonTake,buttonPhone,buttonHelp;
 	ImageView imv;
 	static Bitmap bmp=null;
 	static String nameBmp="";
+	
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -52,8 +60,13 @@ public class Main extends Activity {
 		
 		buttonTake.setOnClickListener( new OnClickListener() {
 			public void onClick(View v) {
-				preview.camera.takePicture(shutterCallback, rawCallback, jpegCallback);
-				
+				try{
+					preview.camera.takePicture(shutterCallback, rawCallback, jpegCallback);
+				}catch(NullPointerException e){
+					Toast.makeText(Main.this, "Can not connect to Camera", Toast.LENGTH_SHORT).show();
+					updateCamera();
+					e.printStackTrace();
+				}
 			}
 		});
 		buttonPhone.setOnClickListener(new OnClickListener() {
@@ -79,16 +92,20 @@ public class Main extends Activity {
 		
 		
     }
-    private BaseLoaderCallback mOpenCVCallBack = new BaseLoaderCallback(this) {
+    private BaseLoaderCallbackCustom mOpenCVCallBack = new BaseLoaderCallbackCustom(this) {
 		@Override
 		public void onManagerConnected(int status) {
 			switch (status) {
 			case LoaderCallbackInterface.SUCCESS: {
 				Log.i(TAG, "OpenCV loaded successfully");
-				setContentView(R.layout.main);
+				updateCamera();
 			}
 				break;
+			case LoaderCallbackInterface.INSTALL_CANCELED:
+				Log.d(TAG, "OpenCV library instalation was canceled by user");
+				break;
 			default: {
+				Toast.makeText(Main.this, "Please install opencv Lib before!", Toast.LENGTH_SHORT).show();
 				super.onManagerConnected(status);
 			}
 				break;
@@ -108,38 +125,71 @@ public class Main extends Activity {
 				imv.setImageBitmap(bmp);
 				imv.setVisibility(View.VISIBLE);
 			}
-			someOneLikeYou(bmp);
 			
 			updateCamera();
+			
+			try{
+				someOneLikeYou(bmp);
+			}catch (UnsatisfiedLinkError e) {
+				e.printStackTrace();
+			}catch (IllegalStateException e) {
+				e.printStackTrace();
+			}
 			break;
 
 		default:
 			break;
 		}
     }
-	private void someOneLikeYou(Bitmap bmp){
-//		if (!OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_2, this, mOpenCVCallBack)) {
-//			Log.e(TAG, "Cannot connect to OpenCV Manager");
-//			return;
-//		}
-//		Toast.makeText(this, nameBmp, Toast.LENGTH_SHORT).show();
-		/*
-		Mat matCurrent = Highgui.imread(nameBmp);
-		try{
-			Imgproc.cvtColor(matCurrent, matCurrent, Imgproc.COLOR_RGB2GRAY);
-			Bitmap src=Main.bmp;
-			Utils.matToBitmap(matCurrent, src);
-			if(preview.setBackground(src)){
-				return;
-			}else
-				Toast.makeText(this, "can not draw", Toast.LENGTH_SHORT).show();
-		}catch (IllegalStateException e) {
-			e.printStackTrace();
-		}catch (UnsatisfiedLinkError e){
-			e.printStackTrace();
+	private double someOneLikeYou(Bitmap bmp) throws UnsatisfiedLinkError,IllegalStateException{
+		if(bmp == null)
+			return -1;
+		// Load Library OpenCV
+		if (!OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_2, this, mOpenCVCallBack)) {
+			Log.e(TAG, "Cannot connect to OpenCV Manager");
+			return -1;
 		}
-		*/
+		// Save Image to SdCard
+		//Toast.makeText(this, nameBmp, Toast.LENGTH_SHORT).show();
+		
+		// PreProcessing - Face Detection
+		bmp=faceDetection(bmp);
+		
+		Bitmap dst=bmp;
+		// Processing - Face Recognition
+		double percentMatching=faceRecognition(bmp,dst);
+		
+		// Preview
+		if(preview.setBackground(dst)){
+			Toast.makeText(this, percentMatching + " %matching", Toast.LENGTH_SHORT).show();
+			return percentMatching;
+		}else
+			Toast.makeText(this, "can not draw", Toast.LENGTH_SHORT).show();
+		return -1;
     }
+	/**
+	 * @param nameBmp: directory of image to recognize
+	 * @param dst: bitmap matched
+	 * @return percent matching.
+	 * */
+	private double faceRecognition(Bitmap src,Bitmap dst){
+		// get file name from src to nameBmp!
+		Mat matCurrent = Highgui.imread(nameBmp);
+		if(processLikeYou)
+			Imgproc.cvtColor(matCurrent, matCurrent, Imgproc.COLOR_RGB2GRAY);
+			
+		Bitmap rslt=Main.bmp;
+		Utils.matToBitmap(matCurrent, rslt);
+		dst=rslt;
+		return 90;
+	}
+	/**
+	 * @param bmp: image source
+	 * @return bitmap face
+	 * */
+	private Bitmap faceDetection(Bitmap bmp){
+		return bmp;
+	}
     @Override
     protected void onDestroy() {
     	super.onDestroy();
@@ -173,7 +223,7 @@ public class Main extends Activity {
     	((FrameLayout) findViewById(R.id.frame_layout_camera)).removeAllViews();
     	((FrameLayout) findViewById(R.id.frame_layout_camera)).addView(preview);
     }
-        
+    
     ShutterCallback shutterCallback = new ShutterCallback() {
 		public void onShutter() {
 			Log.d(TAG, "onShutter'd");

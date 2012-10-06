@@ -7,18 +7,23 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Point;
 import android.graphics.Rect;
 import android.hardware.Camera;
+import android.hardware.Camera.Face;
 import android.hardware.Camera.PreviewCallback;
+import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.widget.Toast;
 
 public class ScreenCamera extends SurfaceView implements SurfaceHolder.Callback {
 	private static final String TAG = "ScreenCamera";
 
 	SurfaceHolder mHolder;
 	public Camera camera;
+	public Canvas canvas=null;
 
 	public ScreenCamera(Context context) {
 		super(context);
@@ -29,7 +34,6 @@ public class ScreenCamera extends SurfaceView implements SurfaceHolder.Callback 
 		mHolder.addCallback(this);
 		mHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 	}
-
 	@Override
 	public void surfaceChanged(SurfaceHolder holder, int format, int w, int h) {
 		// Now that the size is known, set up the camera parameters and begin
@@ -37,6 +41,30 @@ public class ScreenCamera extends SurfaceView implements SurfaceHolder.Callback 
 		try{
 			camera.setDisplayOrientation(90);
 			Camera.Parameters parameters = camera.getParameters();
+			try{
+				if(parameters.getMaxNumDetectedFaces()>0){
+					camera.setFaceDetectionListener(new Camera.FaceDetectionListener() {
+						
+						@Override
+						public void onFaceDetection(Face[] faces, Camera camera) {
+							if(faces!=null){
+								for(Face iFace: faces){
+									int id=iFace.id;
+									int score=iFace.score;
+									Point leftEye=iFace.leftEye;
+									Point mouth=iFace.mouth;
+									Point rightEye=iFace.rightEye;
+									Rect rect=iFace.rect;
+									
+									Log.e("Face Detection", id+score+leftEye.x+leftEye.y+mouth.x+rightEye.x+rect.bottom+"");
+								}
+							}
+						}
+					});
+				}
+			}catch(NoSuchMethodError e){
+				e.printStackTrace();
+			}
 			parameters.setPreviewSize(w, h);
 			camera.setParameters(parameters);
 			camera.startPreview();
@@ -56,21 +84,6 @@ public class ScreenCamera extends SurfaceView implements SurfaceHolder.Callback 
 			camera.setPreviewCallback(new PreviewCallback() {
 
 				public void onPreviewFrame(byte[] data, Camera arg1) {
-//					FileOutputStream outStream = null;
-//					try {
-//						outStream = new FileOutputStream(String.format(
-//								getContext().getString(
-//										R.string._sdcard_multi_d_jpg),
-//								System.currentTimeMillis()));
-//						outStream.write(data);
-//						outStream.close();
-//						Log.d(TAG, "onPreviewFrame - wrote bytes: "+ data.length);
-//					} catch (FileNotFoundException e) {
-//						e.printStackTrace();
-//					} catch (IOException e) {
-//						e.printStackTrace();
-//					} finally {
-//					}
 					ScreenCamera.this.invalidate();
 				}
 			});
@@ -143,16 +156,23 @@ public class ScreenCamera extends SurfaceView implements SurfaceHolder.Callback 
 		
 		mHolder.unlockCanvasAndPost(canvas);
 	};
-	public Canvas canvas=null;
+	
 	public boolean setBackground(Bitmap bmp){
-		if(canvas==null) return false;
+		if(bmp==null){
+			Toast.makeText(this.getContext(), "Bmp null", Toast.LENGTH_SHORT).show();
+			return false;
+		}
+		canvas=getHolder().lockCanvas(null);
 		
-		Rect src=new Rect(0,0,bmp.getWidth(),bmp.getHeight());
-		Rect dst=new Rect(0, 0, canvas.getWidth(), canvas.getHeight());
-		Paint p=new Paint();
-		canvas.drawBitmap(bmp, src, dst,p );
-		mHolder.lockCanvas();
-		onDraw(canvas);
+		if(canvas ==null){
+			canvas=new Canvas(bmp);
+		}
+		synchronized (mHolder) {
+			Rect src=new Rect(0,0,bmp.getWidth(),bmp.getHeight());
+			Rect dst=new Rect(0, 0, canvas.getWidth(), canvas.getHeight());
+			Paint p=new Paint();
+			canvas.drawBitmap(bmp, src, dst,p );
+		}
 		mHolder.unlockCanvasAndPost(canvas);
 		return true;
 	}
