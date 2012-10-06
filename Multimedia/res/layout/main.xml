@@ -2,17 +2,35 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent" 
-    android:background="@drawable/background_3">
-    <FrameLayout 
-        android:id="@+id/frame_layout_camera"
+    android:background="@drawable/background_wood">
+    <ImageView 
+        android:id="@+id/logo_someonelikeyou"
+        android:layout_width="fill_parent"
+        android:layout_height="50dp"
+        android:layout_marginLeft="40dp"
+        android:layout_marginRight="40dp"
+        android:layout_marginTop="0dp"
+        android:layout_marginBottom="5dp"
+        android:src="@drawable/some_one_like_you"
+        android:layout_alignParentTop="true"
+        android:contentDescription="@string/app_name"/>
+    <LinearLayout 
+        android:id="@+id/frame_layout_camera_parent"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
         android:layout_marginLeft="34dp"
         android:layout_marginRight="34dp"
-        android:layout_marginTop="34dp"
+        android:layout_marginTop="40dp"
         android:layout_marginBottom="66dp"
-        android:background="#fff">
-    </FrameLayout>
+        android:background="@drawable/bound"
+        android:gravity="center"
+        android:layout_alignBottom="@id/logo_someonelikeyou">
+        <FrameLayout 
+            android:id="@+id/frame_layout_camera"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:layout_margin="6dip"/>
+    </LinearLayout>
 	<Button 
 	    android:id="@+id/button_take_picture"
 	    android:layout_width="57dp"
@@ -51,7 +69,7 @@
             android:id="@+id/image_view"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@drawable/wholikeyou"
+            android:src="@drawable/btn_watch_100"
             android:contentDescription="@string/_sdcard_multi_d_jpg"
-            android:visibility="invisible"/>
+            android:visibility="gone"/>
 </RelativeLayout>

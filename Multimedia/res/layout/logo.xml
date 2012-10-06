@@ -12,7 +12,7 @@
 	        <ImageView 
 	            android:layout_width="wrap_content"
 	            android:layout_height="wrap_content"
-	            android:src="@drawable/wholikeyou"
+	            android:src="@drawable/some_one_like_you"
 	            android:layout_margin="15dp"
 	            android:contentDescription="@string/_sdcard_multi_d_jpg"/>
 	    </LinearLayout>
